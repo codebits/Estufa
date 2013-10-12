@@ -36,7 +36,7 @@ DHT22 myDHT22(DHT22_PIN);
 // initialize the library with the numbers of the interface pins
 LCDKeypad lcd;
 //LiquidCrystal lcd(12, 11, 5, 4, 3, 2);  //with normal lcd
-char start_msg[] = "Estufa v0.1";
+char start_msg[] = "GreenHouse v0.1";
 
 int buttonPressed;
 
@@ -133,7 +133,6 @@ if(lcd.button() !=KEYPAD_NONE ){
   if(lcd.button() == KEYPAD_DOWN && state == 0){
     delay(120);
     if(lcd.button() == KEYPAD_DOWN && state == 0) str--;}
-  Serial.println(str);
   if (str >2 || str == 1) {
     str= 1;
     lcd.clear();
@@ -410,15 +409,14 @@ if(lcd.button() !=KEYPAD_NONE ){
       // so you have to close this one before opening another.
       File dataFile = SD.open("datalog.txt", FILE_WRITE);
       if (dataFile) {               // if the file is available, write to it:
-        dataFile.close();           // dataFile.println(dataString);
+        dataFile.println(dataString);
+        dataFile.close();          
         Serial.println(dataString); // print to the serial port too:
       }  
       else {
         Serial.println("Error opening File");// if the file isn't open, pop up an error:
       }
- 
-   //  if(lcd.button()== KEYPAD_UP)
-     //      lcd.blink();
+
 }
 
 
