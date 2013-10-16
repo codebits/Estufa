@@ -41,6 +41,7 @@ char start_msg[] = "GreenHouse v0.1";
 int buttonPressed;
 
   char * item[] = {"Set Relays      ","Set Date-Time   "};
+  char * relay[] = {"Pump            ","Motor           ","Valve           "};
   int str = 1;
 
 boolean PAUSE(int time)
@@ -176,13 +177,20 @@ if(lcd.button() !=KEYPAD_NONE ){
               ////// Set Relay Number////////////////////////////////////
               
               int relay_number;
+              byte setrelay_second; 
+              byte setrelay_minute; 
+              byte setrelay_hour; 
+              byte setrelay_weekDay; 
+              byte setrelay_monthDay; 
+              byte setrelay_month;
               int k;
               boolean aux2;
+             
              aux2 =  false;
               k=0;
               lcd.clear();
               lcd.setCursor(0, 0);
-              lcd.print("Relay Number ?");
+              lcd.print("Select Relay ?");
               lcd.setCursor(0, 1);
               waitButton();
 
@@ -196,12 +204,112 @@ if(lcd.button() !=KEYPAD_NONE ){
                 if(lcd.button() == KEYPAD_DOWN){
                  delay(100);
                  if(lcd.button() == KEYPAD_DOWN) k--;}
-                if(k >2) k =2;
+                if(k >3) k =3;
+                if (k <1) k = 1;
+                lcd.setCursor(0,1);
+                lcd.print(relay[k]);}
+                relay_number = k;
+                
+                               ////  Month  ///////////////////////////////////////////////////////
+              lcd.clear();
+              lcd.setCursor(0, 0);
+              lcd.print("Mounth (1-12) ?");
+              lcd.setCursor(0, 1);
+              waitButton();
+               k=0;
+              aux2 = false;
+              while(!aux2){
+                 if(lcd.button() == KEYPAD_SELECT){
+                 delay(100);
+                 if(lcd.button() == KEYPAD_SELECT) aux2=true;}
+                if(lcd.button() == KEYPAD_UP){
+                 delay(100);
+                 if(lcd.button() == KEYPAD_UP) k++;}
+                if(lcd.button() == KEYPAD_DOWN){
+                 delay(100);
+                 if(lcd.button() == KEYPAD_DOWN) k--;}
+                if(k >12) k =12;
                 if (k <1) k = 1;
                 lcd.setCursor(0,1);
                 lcd.print("  ");
                 lcd.print(k);}
-                relay_number = k;
+                setrelay_month = k;
+                
+                
+                /////////////////////// HOUR ////////////////////////////////////////////
+               lcd.clear();
+              lcd.setCursor(0, 0);
+              lcd.print("HOUR ?");
+              lcd.setCursor(0, 1);
+              waitButton();
+             k=0;
+              aux2 = false;
+              while(!aux2){
+                 if(lcd.button() == KEYPAD_SELECT){
+                 delay(100);
+                 if(lcd.button() == KEYPAD_SELECT) aux2=true;}
+                if(lcd.button() == KEYPAD_UP){
+                 delay(100);
+                 if(lcd.button() == KEYPAD_UP) k++;}
+                if(lcd.button() == KEYPAD_DOWN){
+                 delay(100);
+                 if(lcd.button() == KEYPAD_DOWN) k--;}
+                if(k >23) k = 23;
+                if (k <0) k = 0;
+                lcd.setCursor(0,1);
+                lcd.print("  ");
+                lcd.print(k);}
+                setrelay_hour = k;
+                
+               ////Minutes
+              lcd.clear();
+              lcd.setCursor(0, 0);
+              lcd.print("Minutes ?");
+              lcd.setCursor(0, 1);
+              waitButton();
+               k=0;
+              aux2 = false;
+              while(!aux2){
+                 if(lcd.button() == KEYPAD_SELECT){
+                 delay(100);
+                 if(lcd.button() == KEYPAD_SELECT) aux2=true;}
+                if(lcd.button() == KEYPAD_UP){
+                 delay(100);
+                 if(lcd.button() == KEYPAD_UP) k++;}
+                if(lcd.button() == KEYPAD_DOWN){
+                 delay(100);
+                 if(lcd.button() == KEYPAD_DOWN) k--;}
+                if(k >59) k =59;
+                if (k <0) k = 0;
+                lcd.setCursor(0,1);
+                lcd.print("  ");
+                lcd.print(k);}
+                setrelay_minute = k;
+              
+              //// SECONDS
+              lcd.clear();
+              lcd.setCursor(0, 0);
+              lcd.print("SECONDS ?");
+              lcd.setCursor(0, 1);
+              waitButton();
+              k=0;
+              aux2 = false;
+              while(!aux2){
+                 if(lcd.button() == KEYPAD_SELECT){
+                 delay(100);
+                 if(lcd.button() == KEYPAD_SELECT) aux2=true;}
+                if(lcd.button() == KEYPAD_UP){
+                 delay(100);
+                 if(lcd.button() == KEYPAD_UP) k++;}
+                if(lcd.button() == KEYPAD_DOWN){
+                 delay(100);
+                 if(lcd.button() == KEYPAD_DOWN) k--;}
+                if(k >59) k =59;
+                if (k <0) k = 0;
+                lcd.setCursor(0,1);
+                lcd.print("  ");
+                lcd.print(k);}
+                setrelay_second = k;
               
     break;
     case 2:  //Set Date And Time
