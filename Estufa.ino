@@ -173,9 +173,36 @@ if(lcd.button() !=KEYPAD_NONE ){
               }
     break;
     case 1:  //Set relays
+              ////// Set Relay Number////////////////////////////////////
+              
+              int relay_number;
+              int k;
+              boolean aux2;
+             aux2 =  false;
+              k=0;
               lcd.clear();
               lcd.setCursor(0, 0);
-              lcd.print("Set Relays");
+              lcd.print("Relay Number ?");
+              lcd.setCursor(0, 1);
+              waitButton();
+
+              while(!aux2){
+                 if(lcd.button() == KEYPAD_SELECT){
+                 delay(100);
+                 if(lcd.button() == KEYPAD_SELECT) aux2=true;}
+                if(lcd.button() == KEYPAD_UP){
+                 delay(100);
+                 if(lcd.button() == KEYPAD_UP) k++;}
+                if(lcd.button() == KEYPAD_DOWN){
+                 delay(100);
+                 if(lcd.button() == KEYPAD_DOWN) k--;}
+                if(k >2) k =2;
+                if (k <1) k = 1;
+                lcd.setCursor(0,1);
+                lcd.print("  ");
+                lcd.print(k);}
+                relay_number = k;
+              
     break;
     case 2:  //Set Date And Time
               byte second =      0; //0-59
