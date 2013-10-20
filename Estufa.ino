@@ -12,7 +12,7 @@
 #include <Metro.h>
 #include "Wire.h"
 #define DS1307_ADDRESS 0x68
-#define DHT22_PIN 6
+
 volatile int state = 0;
 
 /*
@@ -24,25 +24,31 @@ volatile int state = 0;
 // Data wire is plugged into port 7 on the Arduino
 */
 
-DHT22_ERROR_t errorCode;
+DHT22_ERROR_t errorCode_1;
+DHT22_ERROR_t errorCode_2;
 const int chipSelect = 8;
 byte zero = 0x00; //workaround for issue #527
-
-int ledPin = 13;
+///////// PINS AND DEVICES /////////////////////////////////
+#define DHT22_1_PIN 6
+#define DHT22_2_PIN 7 
+int pumpPin = 3;
+int motorPin = 6;
+int valve =  A4;
+int relayONE = A2;
+int relayTWO = A3;
 int blacklight = 10;
-
+int relay_number[5] ={pumpPin,motorPin,valve,relayONE,relayTWO}; 
+///////////////////////////////////////////////////////////
 // Setup a DHT22 instance
-DHT22 myDHT22(DHT22_PIN);
+DHT22 DHT22_1(DHT22_1_PIN);
+DHT22 DHT22_2(DHT22_2_PIN);
 // initialize the library with the numbers of the interface pins
 LCDKeypad lcd;
-//LiquidCrystal lcd(12, 11, 5, 4, 3, 2);  //with normal lcd
 char start_msg[] = "GreenHouse v0.1";
-
 int buttonPressed;
-
-  char * item[] = {"Set Relays      ","Set Date-Time   "};
-  char * relay[] = {"Pump            ","Motor           ","Valve           "};
-  int str = 1;
+char * item[] = {"Set Relays      ","Set Date-Time   "};
+char * relay[] = {"Pump            ","Motor           ","Valve           ","relayONE        ","relayTWO        "};
+int str = 1;
 
 boolean PAUSE(int time)
 {
@@ -63,7 +69,6 @@ return exit;
 }
 
 // FUNCTIONS DECLARATION ///////////////////////////////////////
-
 void setDateTime(byte second,byte minute,byte hour,byte weekDay,byte monthDay,byte month,byte year);
 byte decToBcd(byte val); //retreive date from RTC
 byte bcdToDec(byte val); //retreive date from RTC
@@ -74,20 +79,9 @@ void setup(void)
 {
   Wire.begin();
   Serial.begin(9600);
- 
-  setDateTime(0,51,23,6,11,10,13);
-  /* second =      0; //0-59
-   minute =      51; //0-59
-   hour =        23; //0-23
-   weekDay =     6; //1-7
-   monthDay =    11; //1-31
-   month =       10; //1-12
-   year  =       13; //0-99*/
- //MUST CONFIGURE IN FUNCTION
- 
   pinMode(blacklight,OUTPUT);   // blacklight LCD
   digitalWrite(blacklight,HIGH);// blacklight LCD
-   // set up the LCD's number of columns and rows: 
+  // set up the LCD's number of columns and rows: 
   lcd.begin(16,2);
   lcd.setCursor(0, 0);
   lcd.print(start_msg);
@@ -111,9 +105,13 @@ void setup(void)
    delay(500);
    lcd.clear();
    digitalWrite(blacklight,HIGH);
-   errorCode = myDHT22.readData();
+   errorCode_1 = DHT22_1.readData();
+   errorCode_2 = DHT22_2.readData();
+   // setting time for RTC (real time clock)
+   setDateTime();
+                
 }
-
+////////////// LOOP /////////////////////////////////////////////////////////////
 void loop(void)
 { 
   String dataString = "";// new string at each loop
@@ -121,12 +119,6 @@ void loop(void)
   // 2s warm-up after power-on.
   //delay(2000);
 
- /* buttonPressed=waitButton();
-  waitReleaseButton();
-  if (buttonPressed==KEYPAD_SELECT){
-   digitalWrite(blacklight,LOW);
-   delay(1000);}
-  */
 if(lcd.button() !=KEYPAD_NONE ){
   if(lcd.button() == KEYPAD_UP && state == 0){
      delay(120);
@@ -157,16 +149,21 @@ if(lcd.button() !=KEYPAD_NONE ){
               if (PAUSE(2000))
                  break;
               else{
-                        errorCode = myDHT22.readData();
-                        if(errorCode == DHT_ERROR_NONE){
+                        errorCode_1 = DHT22_1.readData();
+                        errorCode_2 = DHT22_2.readData();
+                        if(errorCode_1 == DHT_ERROR_NONE && errorCode_2 == DHT_ERROR_NONE){
                                             lcd.setCursor(0, 0);
-                                            lcd.print("TEMP: ");
-                                            lcd.print(myDHT22.getTemperatureC());
-                                            lcd.print(" C ");
+                                            lcd.print("T: ");
+                                            lcd.print(DHT22_1.getTemperatureC());
+                                            lcd.print("c ");
+                                            lcd.print(DHT22_2.getTemperatureC());
+                                            lcd.print("c");
                                             lcd.setCursor(0, 1);
-                                            lcd.print("HUM : ");
-                                            lcd.print(myDHT22.getHumidity());
-                                            lcd.print(" % ");}
+                                            lcd.print("H: ");
+                                            lcd.print(DHT22_1.getHumidity());
+                                            lcd.print("% ");
+                                            lcd.print(DHT22_2.getHumidity());
+                                            lcd.print("%");}
                         else{
                           lcd.clear();
                           lcd.setCursor(0, 0);
@@ -193,7 +190,7 @@ if(lcd.button() !=KEYPAD_NONE ){
               lcd.print("Select Relay ?");
               lcd.setCursor(0, 1);
               waitButton();
-
+              //////////////// Select Relay
               while(!aux2){
                  if(lcd.button() == KEYPAD_SELECT){
                  delay(100);
@@ -312,7 +309,60 @@ if(lcd.button() !=KEYPAD_NONE ){
                 setrelay_second = k;
               
     break;
-    case 2:  //Set Date And Time
+  }
+
+      
+  
+      // Reset the register pointer
+      Wire.beginTransmission(DS1307_ADDRESS);
+      Wire.write(zero);
+      Wire.endTransmission();
+      Wire.requestFrom(DS1307_ADDRESS,7 );
+      int second = bcdToDec(Wire.read());
+      int minute = bcdToDec(Wire.read());
+      int hour = bcdToDec(Wire.read() & 0b111111); //24 hour time
+      int weekDay = bcdToDec(Wire.read()); //0-6 -> sunday - Saturday
+      int monthDay = bcdToDec(Wire.read());
+      int month = bcdToDec(Wire.read());
+      int year = bcdToDec(Wire.read());
+      dataString += "d";
+      dataString += String((int)monthDay);
+      dataString += "m";
+      dataString += String((int)month);
+      dataString += "y";
+      dataString += String((int)year);
+      dataString += "-";
+      dataString += String((int)hour);
+      dataString += ":";
+      dataString += String((int)minute);
+      dataString += "t1";
+      dataString += String((int) DHT22_1.getTemperatureC());
+      dataString += "t2";
+      dataString += String((int) DHT22_1.getTemperatureC());
+      dataString += "h1";
+      dataString += String((int)DHT22_1.getHumidity());
+      dataString += "h2";
+      dataString += String((int)DHT22_1.getHumidity());
+      //String filelog = "datalog"+String((int)month)+".txt";
+      ///////  DATA LOG  ////////////////////////////////////////////////
+      // open the file. note that only one file can be open at a time,
+      // so you have to close this one before opening another.
+      File dataFile = SD.open("datalog.txt", FILE_WRITE);
+     //File dataFile = SD.open(filelog, FILE_WRITE);
+      if (dataFile) {               // if the file is available, write to it:
+        dataFile.println(dataString);
+        dataFile.close();          
+        Serial.println(dataString); // print to the serial port too:
+      }  
+      else {
+        Serial.println("Error opening File");// if the file isn't open, pop up an error:
+      }
+
+}
+
+
+void setDateTime(){
+////////////////////////////////////////////////////////////////////
               byte second =      0; //0-59
               byte minute =      00; //0-59
               byte hour =        00; //0-23
@@ -396,7 +446,7 @@ if(lcd.button() !=KEYPAD_NONE ){
                 month=i;
                 
               //// YEAR////////////////////////////////////////////////////////
-                                           lcd.clear();
+              lcd.clear();
               lcd.setCursor(0, 0);
               lcd.print("Year (0-99) ?");
               lcd.setCursor(0, 1);
@@ -421,9 +471,9 @@ if(lcd.button() !=KEYPAD_NONE ){
                 year = i;
                 
                 /////////////////////// HOUR ////////////////////////////////////////////
-               lcd.clear();
+              lcd.clear();
               lcd.setCursor(0, 0);
-              lcd.print("HOUR ?");
+              lcd.print("HOUR (0-23) ?");
               lcd.setCursor(0, 1);
               waitButton();
              i=0;
@@ -448,7 +498,7 @@ if(lcd.button() !=KEYPAD_NONE ){
                ////Minutes
               lcd.clear();
               lcd.setCursor(0, 0);
-              lcd.print("Minutes ?");
+              lcd.print("Minutes (0-59) ?");
               lcd.setCursor(0, 1);
               waitButton();
                i=0;
@@ -473,7 +523,7 @@ if(lcd.button() !=KEYPAD_NONE ){
               //// SECONDS
               lcd.clear();
               lcd.setCursor(0, 0);
-              lcd.print("SECONDS ?");
+              lcd.print("SECONDS (0-59) ?");
               lcd.setCursor(0, 1);
               waitButton();
               i=0;
@@ -494,78 +544,18 @@ if(lcd.button() !=KEYPAD_NONE ){
                 lcd.print("  ");
                 lcd.print(i);}
                 second = i; 
-                setDateTime(second,minute,hour,weekDay,monthDay,month,year);
                 lcd.clear();
                 lcd.setCursor(0, 0); 
                 lcd.print("SETTINGS SAVED");
-                delay(2000);
+                delay(3000);
                 lcd.clear();
                 lcd.setCursor(0, 0); 
                 lcd.print(String((int)hour)+"h "+String((int)minute)+"min "+String((int)second)+"sec"); 
                 lcd.setCursor(0, 1); 
                 lcd.print(String((int)monthDay)+"-"+String((int)month)+"-"+String((int)year)); 
                 delay(3000);
-                state = 0;
-    break;
- 
-  }
-
-
-  
-      // Reset the register pointer
-      Wire.beginTransmission(DS1307_ADDRESS);
-      Wire.write(zero);
-      Wire.endTransmission();
-      Wire.requestFrom(DS1307_ADDRESS,7 );
-      int second = bcdToDec(Wire.read());
-      int minute = bcdToDec(Wire.read());
-      int hour = bcdToDec(Wire.read() & 0b111111); //24 hour time
-      int weekDay = bcdToDec(Wire.read()); //0-6 -> sunday - Saturday
-      int monthDay = bcdToDec(Wire.read());
-      int month = bcdToDec(Wire.read());
-      int year = bcdToDec(Wire.read());
-      dataString += "d";
-      dataString += String((int)monthDay);
-      dataString += "m";
-      dataString += String((int)month);
-      dataString += "y";
-      dataString += String((int)year);
-      dataString += "-";
-      dataString += String((int)hour);
-      dataString += ":";
-      dataString += String((int)minute);
-      dataString += "t";
-      dataString += String((int) myDHT22.getTemperatureC());
-      dataString += "h";
-      dataString += String((int)myDHT22.getHumidity());
-      
-      ///////  DATA LOG  ////////////////////////////////////////////////
-      // open the file. note that only one file can be open at a time,
-      // so you have to close this one before opening another.
-      File dataFile = SD.open("datalog.txt", FILE_WRITE);
-      if (dataFile) {               // if the file is available, write to it:
-        dataFile.println(dataString);
-        dataFile.close();          
-        Serial.println(dataString); // print to the serial port too:
-      }  
-      else {
-        Serial.println("Error opening File");// if the file isn't open, pop up an error:
-      }
-
-}
-
-
-void setDateTime(byte second,byte minute,byte hour,byte weekDay,byte monthDay,byte month,byte year){
-  /* second =      0; //0-59
-   minute =      51; //0-59
-   hour =        23; //0-23
-   weekDay =     6; //1-7
-   monthDay =    11; //1-31
-   month =       10; //1-12
-   year  =       13; //0-99*/
   Wire.beginTransmission(DS1307_ADDRESS);
   Wire.write(zero); //stop Oscillator
-  
   Wire.write(decToBcd(second));
   Wire.write(decToBcd(minute));
   Wire.write(decToBcd(hour));
@@ -606,7 +596,7 @@ void printDate(){
   int year = bcdToDec(Wire.read());
 
   //print the date EG   3/1/11 23:59:59
-   Serial.println("Data Set");
+  Serial.println("Data Set");
   Serial.print(month);
   Serial.print("/");
   Serial.print(monthDay);
