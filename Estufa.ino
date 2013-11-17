@@ -73,12 +73,14 @@ void setDateTime(byte second,byte minute,byte hour,byte weekDay,byte monthDay,by
 byte decToBcd(byte val); //retreive date from RTC
 byte bcdToDec(byte val); //retreive date from RTC
 void printDate();  // print time/date to serial por
-
+void setRelays(int relay,int day,int month,int hour,int minutes,int seconds);
 /////////// SETUP ///////////////////////////////////////////////
 void setup(void)
 {
   Wire.begin();
   Serial.begin(9600);
+  pinMode(relayONE,OUTPUT);
+  pinMode(relayTWO ,OUTPUT);
   pinMode(blacklight,OUTPUT);   // blacklight LCD
   digitalWrite(blacklight,HIGH);// blacklight LCD
   // set up the LCD's number of columns and rows: 
@@ -232,6 +234,32 @@ if(lcd.button() !=KEYPAD_NONE ){
                 lcd.print(k);}
                 setrelay_month = k;
                 
+ 
+ 
+              ////  Day ///////////////////////////////////////////////////////
+              lcd.clear();
+              lcd.setCursor(0, 0);
+              lcd.print("Day (1-31) ?");
+              lcd.setCursor(0, 1);
+              waitButton();
+               k=0;
+              aux2 = false;
+              while(!aux2){
+                 if(lcd.button() == KEYPAD_SELECT){
+                 delay(100);
+                 if(lcd.button() == KEYPAD_SELECT) aux2=true;}
+                if(lcd.button() == KEYPAD_UP){
+                 delay(100);
+                 if(lcd.button() == KEYPAD_UP) k++;}
+                if(lcd.button() == KEYPAD_DOWN){
+                 delay(100);
+                 if(lcd.button() == KEYPAD_DOWN) k--;}
+                if(k >31) k =12;
+                if (k <1) k = 1;
+                lcd.setCursor(0,1);
+                lcd.print("  ");
+                lcd.print(k);}
+                setrelay_weekDay = k;
                 
                 /////////////////////// HOUR ////////////////////////////////////////////
                lcd.clear();
@@ -307,6 +335,8 @@ if(lcd.button() !=KEYPAD_NONE ){
                 lcd.print("  ");
                 lcd.print(k);}
                 setrelay_second = k;
+                setRelays(relay_number,setrelay_weekDay,setrelay_month,setrelay_hour,setrelay_minute,setrelay_second);
+                
               
     break;
   }
@@ -325,23 +355,23 @@ if(lcd.button() !=KEYPAD_NONE ){
       int monthDay = bcdToDec(Wire.read());
       int month = bcdToDec(Wire.read());
       int year = bcdToDec(Wire.read());
-      dataString += "d";
+      dataString += "day";
       dataString += String((int)monthDay);
-      dataString += "m";
+      dataString += "month";
       dataString += String((int)month);
-      dataString += "y";
+      dataString += "year";
       dataString += String((int)year);
-      dataString += "-";
+      dataString += "time";
       dataString += String((int)hour);
       dataString += ":";
       dataString += String((int)minute);
-      dataString += "t1";
+      dataString += "tp1";
       dataString += String((int) DHT22_1.getTemperatureC());
-      dataString += "t2";
+      dataString += "tp2";
       dataString += String((int) DHT22_1.getTemperatureC());
-      dataString += "h1";
+      dataString += "hu1";
       dataString += String((int)DHT22_1.getHumidity());
-      dataString += "h2";
+      dataString += "hu2";
       dataString += String((int)DHT22_1.getHumidity());
       //String filelog = "datalog"+String((int)month)+".txt";
       ///////  DATA LOG  ////////////////////////////////////////////////
@@ -640,3 +670,19 @@ boolean aux;
     if (lcd.button() == button) aux == true;
     return aux;
 }*/
+
+void setRelays(int rNumber,int rDay,int rMonth,int rHour,int rMinutes,int rSeconds){
+
+
+          //    if(rNumber == 1){           
+                digitalWrite(relayONE,HIGH);
+            //  }
+              //else if(rNumber == 2){}
+             // else if(rNumber == 3){}
+             // else if(rNumber == 4){}
+             // else if(rNumber == 5){}
+              
+              
+
+
+}
