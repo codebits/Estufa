@@ -59,6 +59,7 @@ boolean PAUSE(int time)
   while(!pause1.check())
   {
     if (lcd.button() != KEYPAD_NONE){
+       digitalWrite(blacklight,HIGH);// blacklight LCD
       exit = true;
     }
     if(exit)break;
@@ -67,13 +68,16 @@ boolean PAUSE(int time)
 
 return exit;
 }
-
+// OTHER VARIABLES /////////////////////////////////////////////
+volatile unsigned int present_hour[3] ={0,0,0}; // hours/minutes/seconds
+volatile unsigned int present_date[3] ={0,0,0}; // day/month/year
 // FUNCTIONS DECLARATION ///////////////////////////////////////
 void setDateTime(byte second,byte minute,byte hour,byte weekDay,byte monthDay,byte month,byte year);
+void presentDateTime(unsigned int *date, unsigned *time);
 byte decToBcd(byte val); //retreive date from RTC
 byte bcdToDec(byte val); //retreive date from RTC
 void printDate();  // print time/date to serial por
-void setRelays(int relay,int day,int month,int hour,int minutes,int seconds);
+void setRelays(int relay,int sday,int smonth,int shour,int sminutes,int sseconds,int eday,int emonth,int ehour,int eminutes,int eseconds);
 /////////// SETUP ///////////////////////////////////////////////
 void setup(void)
 {
@@ -111,7 +115,7 @@ void setup(void)
    errorCode_2 = DHT22_2.readData();
    // setting time for RTC (real time clock)
    setDateTime();
-                
+   digitalWrite(blacklight,LOW);// blacklight LCD
 }
 ////////////// LOOP /////////////////////////////////////////////////////////////
 void loop(void)
@@ -176,12 +180,11 @@ if(lcd.button() !=KEYPAD_NONE ){
               ////// Set Relay Number////////////////////////////////////
               
               int relay_number;
-              byte setrelay_second; 
-              byte setrelay_minute; 
-              byte setrelay_hour; 
-              byte setrelay_weekDay; 
-              byte setrelay_monthDay; 
-              byte setrelay_month;
+              byte startRelay_second,endRelay_second; 
+              byte startRelay_minute,endRelay_minute; 
+              byte startRelay_hour,endRelay_hour; 
+              byte startRelay_monthDay,endRelay_weekDay; 
+              byte startRelay_month,endRelay_month;
               int k;
               boolean aux2;
              
@@ -203,10 +206,10 @@ if(lcd.button() !=KEYPAD_NONE ){
                 if(lcd.button() == KEYPAD_DOWN){
                  delay(100);
                  if(lcd.button() == KEYPAD_DOWN) k--;}
-                if(k >3) k =3;
+                if(k >5) k =5;
                 if (k <1) k = 1;
                 lcd.setCursor(0,1);
-                lcd.print(relay[k]);}
+                lcd.print(relay[k-1]);}
                 relay_number = k;
                 
                                ////  Month  ///////////////////////////////////////////////////////
@@ -232,7 +235,7 @@ if(lcd.button() !=KEYPAD_NONE ){
                 lcd.setCursor(0,1);
                 lcd.print("  ");
                 lcd.print(k);}
-                setrelay_month = k;
+                startRelay_month = k;
                 
  
  
@@ -259,7 +262,7 @@ if(lcd.button() !=KEYPAD_NONE ){
                 lcd.setCursor(0,1);
                 lcd.print("  ");
                 lcd.print(k);}
-                setrelay_weekDay = k;
+                startRelay_monthDay = k;
                 
                 /////////////////////// HOUR ////////////////////////////////////////////
                lcd.clear();
@@ -284,7 +287,7 @@ if(lcd.button() !=KEYPAD_NONE ){
                 lcd.setCursor(0,1);
                 lcd.print("  ");
                 lcd.print(k);}
-                setrelay_hour = k;
+                startRelay_hour = k;
                 
                ////Minutes
               lcd.clear();
@@ -309,7 +312,7 @@ if(lcd.button() !=KEYPAD_NONE ){
                 lcd.setCursor(0,1);
                 lcd.print("  ");
                 lcd.print(k);}
-                setrelay_minute = k;
+                startRelay_minute = k;
               
               //// SECONDS
               lcd.clear();
@@ -334,9 +337,9 @@ if(lcd.button() !=KEYPAD_NONE ){
                 lcd.setCursor(0,1);
                 lcd.print("  ");
                 lcd.print(k);}
-                setrelay_second = k;
-                setRelays(relay_number,setrelay_weekDay,setrelay_month,setrelay_hour,setrelay_minute,setrelay_second);
-                
+                startRelay_second = k;
+                //setRelays(relay_number,startRelay_monthDay,startRelay_month,startRelay_hour,startRelay_minute,startRelay_second);
+                state = 0;
               
     break;
   }
@@ -356,23 +359,23 @@ if(lcd.button() !=KEYPAD_NONE ){
       int month = bcdToDec(Wire.read());
       int year = bcdToDec(Wire.read());
       dataString += "day";
-      dataString += String((int)monthDay);
+     dataString += String((int)monthDay);
       dataString += "month";
       dataString += String((int)month);
       dataString += "year";
       dataString += String((int)year);
       dataString += "time";
-      dataString += String((int)hour);
+     dataString += String((int)hour);
       dataString += ":";
       dataString += String((int)minute);
       dataString += "tp1";
       dataString += String((int) DHT22_1.getTemperatureC());
       dataString += "tp2";
-      dataString += String((int) DHT22_1.getTemperatureC());
+      dataString += String((int) DHT22_2.getTemperatureC());
       dataString += "hu1";
       dataString += String((int)DHT22_1.getHumidity());
       dataString += "hu2";
-      dataString += String((int)DHT22_1.getHumidity());
+      dataString += String((int)DHT22_2.getHumidity());
       //String filelog = "datalog"+String((int)month)+".txt";
       ///////  DATA LOG  ////////////////////////////////////////////////
       // open the file. note that only one file can be open at a time,
@@ -671,12 +674,12 @@ boolean aux;
     return aux;
 }*/
 
-void setRelays(int rNumber,int rDay,int rMonth,int rHour,int rMinutes,int rSeconds){
+void setRelays(int relay,int sday,int smonth,int shour,int sminutes,int sseconds,int eday,int emonth,int ehour,int eminutes,int eseconds){
 
 
-          //    if(rNumber == 1){           
+              if(relay == 1 && sday){           
                 digitalWrite(relayONE,HIGH);
-            //  }
+              }
               //else if(rNumber == 2){}
              // else if(rNumber == 3){}
              // else if(rNumber == 4){}
