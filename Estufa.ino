@@ -30,7 +30,7 @@ const int chipSelect = 8;
 byte zero = 0x00; //workaround for issue #527
 ///////// PINS AND DEVICES /////////////////////////////////
 #define DHT22_1_PIN 6
-#define DHT22_2_PIN 7 
+#define DHT22_2_PIN 4 
 int pumpPin = 3;
 int motorPin = 6;
 int valve =  A4;
@@ -59,7 +59,7 @@ boolean PAUSE(int time)
   while(!pause1.check())
   {
     if (lcd.button() != KEYPAD_NONE){
-       digitalWrite(blacklight,HIGH);// blacklight LCD
+     digitalWrite(blacklight,HIGH);// blacklight LCD
       exit = true;
     }
     if(exit)break;
@@ -121,33 +121,34 @@ void setup(void)
 void loop(void)
 { 
   String dataString = "";// new string at each loop
+ // String timeString = "";// new string at each loop
   // The sensor can only be read from every 1-2s, and requires a minimum
   // 2s warm-up after power-on.
   //delay(2000);
 
-if(lcd.button() !=KEYPAD_NONE ){
-  if(lcd.button() == KEYPAD_UP && state == 0){
-     delay(120);
-     if(lcd.button() == KEYPAD_UP && state == 0) str++;}
-  if(lcd.button() == KEYPAD_DOWN && state == 0){
-    delay(120);
-    if(lcd.button() == KEYPAD_DOWN && state == 0) str--;}
-  if (str >2 || str == 1) {
-    str= 1;
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print(item[str-1]);
-    PAUSE(500);}
-  if (str <1 || str == 2){
-    str = 2;
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print(item[str-1]);
-    PAUSE(500);}
-    if(lcd.button() == KEYPAD_SELECT){
-     delay(120);
-     if(lcd.button() == KEYPAD_SELECT)state = str;}
-}
+    if(lcd.button() !=KEYPAD_NONE ){
+      if(lcd.button() == KEYPAD_UP && state == 0){
+         delay(120);
+         if(lcd.button() == KEYPAD_UP && state == 0) str++;}
+      if(lcd.button() == KEYPAD_DOWN && state == 0){
+        delay(120);
+        if(lcd.button() == KEYPAD_DOWN && state == 0) str--;}
+      if (str >2 || str == 1) {
+        str= 1;
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print(item[str-1]);
+        PAUSE(500);}
+      if (str <1 || str == 2){
+        str = 2;
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print(item[str-1]);
+        PAUSE(500);}
+        if(lcd.button() == KEYPAD_SELECT){
+         delay(120);
+         if(lcd.button() == KEYPAD_SELECT)state = str;}
+    }
   switch(state)
   {
     case 0:
@@ -176,6 +177,7 @@ if(lcd.button() !=KEYPAD_NONE ){
                           lcd.print("DHT22 ERROR");}
               }
     break;
+    
     case 1:  //Set relays
               ////// Set Relay Number////////////////////////////////////
               
@@ -342,6 +344,8 @@ if(lcd.button() !=KEYPAD_NONE ){
                 state = 0;
               
     break;
+      default: 
+    ;
   }
 
       
@@ -358,38 +362,47 @@ if(lcd.button() !=KEYPAD_NONE ){
       int monthDay = bcdToDec(Wire.read());
       int month = bcdToDec(Wire.read());
       int year = bcdToDec(Wire.read());
-      dataString += "day";
-     dataString += String((int)monthDay);
-      dataString += "month";
+      //dataString += "day";
+      /*
+      dataString += String((int)monthDay);
+      //dataString += "month";
       dataString += String((int)month);
-      dataString += "year";
+      //dataString += "year";
       dataString += String((int)year);
-      dataString += "time";
-     dataString += String((int)hour);
-      dataString += ":";
+      //dataString += "time";
+      dataString += String((int)hour);
+      //dataString += ":";
+      dataString += String((int)minute);*/
+      //dataString += "tp1";
+      dataString += String((int)monthDay);
+      dataString += String((int)hour);
       dataString += String((int)minute);
-      dataString += "tp1";
+      //dataString += "tp1";
       dataString += String((int) DHT22_1.getTemperatureC());
-      dataString += "tp2";
+      //dataString += "tp2";
       dataString += String((int) DHT22_2.getTemperatureC());
-      dataString += "hu1";
+      //dataString += "hu1";
       dataString += String((int)DHT22_1.getHumidity());
-      dataString += "hu2";
+      //dataString += "hu2";
       dataString += String((int)DHT22_2.getHumidity());
-      //String filelog = "datalog"+String((int)month)+".txt";
+
       ///////  DATA LOG  ////////////////////////////////////////////////
       // open the file. note that only one file can be open at a time,
       // so you have to close this one before opening another.
-      File dataFile = SD.open("datalog.txt", FILE_WRITE);
-     //File dataFile = SD.open(filelog, FILE_WRITE);
+
+      File dataFile = SD.open("DATALOG.TXT", FILE_WRITE);
       if (dataFile) {               // if the file is available, write to it:
         dataFile.println(dataString);
+       // dataFile.println(timeString);
         dataFile.close();          
         Serial.println(dataString); // print to the serial port too:
       }  
       else {
         Serial.println("Error opening File");// if the file isn't open, pop up an error:
       }
+
+
+
 
 }
 
